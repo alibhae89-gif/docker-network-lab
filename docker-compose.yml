@@ -1,0 +1,25 @@
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks: [frontend]
+    depends_on: [web]
+
+  web:
+    build: ./app
+    environment:
+      - REDIS_HOST=redis
+    networks: [frontend, backend]
+    depends_on: [redis]
+
+  redis:
+    image: redis:7-alpine
+    networks: [backend]
+
+networks:
+  frontend:
+  backend:
+    internal: true
