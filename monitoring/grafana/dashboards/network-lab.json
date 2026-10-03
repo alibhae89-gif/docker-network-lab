@@ -1,0 +1,67 @@
+{
+  "uid": "network-lab",
+  "title": "Network Lab",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Web replicas up",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 6 },
+      "targets": [ { "refId": "A", "expr": "sum(up{job=\"web\"})" } ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Requests/s at Nginx",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 6, "y": 0, "w": 18, "h": 6 },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "rate(nginx_http_requests_total[1m])", "legendFormat": "nginx (all requests)" } ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Requests/s per replica (load balancing)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 0, "y": 6, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "sum by (instance) (rate(flask_http_request_total[1m]))", "legendFormat": "{{instance}}" } ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Requests that never reached the app",
+      "description": "Nginx requests minus app requests: rate-limited (429), HTTP to HTTPS redirects, blocked /metrics, and the exporter's own scrape. Spikes during bursts show rate limiting at work.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 12, "y": 6, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "clamp_min(sum(rate(nginx_http_requests_total[1m])) - sum(rate(flask_http_request_total[1m])), 0)", "legendFormat": "stopped at the edge" } ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "p95 latency (app)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 0, "y": 14, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(flask_http_request_duration_seconds_bucket[1m])))", "legendFormat": "p95" } ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Nginx connections",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 12, "y": 14, "w": 12, "h": 8 },
+      "targets": [
+        { "refId": "A", "expr": "nginx_connections_active", "legendFormat": "active" },
+        { "refId": "B", "expr": "nginx_connections_waiting", "legendFormat": "waiting" }
+      ]
+    }
+  ]
+}

@@ -62,6 +62,8 @@ rate_limited() {
   [ "$c" -ge 1 ]
 }
 
+metrics_hidden() { [ "$(curl -sk -o /dev/null -w "%{http_code}" "$URL/metrics")" = "404" ]; }
+
 echo "Waiting for the app to be ready..."
 wait_ready || { echo "App never became ready"; exit 1; }
 
@@ -76,6 +78,7 @@ check "Nginx CANNOT reach Redis (segmentation)"       fail "docker compose exec 
 check "Web CAN reach Redis"                           ok   "web_to_redis"
 check "Load spread over 2+ replicas"                  ok   "spread"
 check "Failover: all requests succeed, one replica down" ok "failover"
+check "Metrics endpoint hidden from public proxy (404)" ok "metrics_hidden"
 check "Rate limiting returns HTTP 429 under burst"    ok   "rate_limited"
 
 echo
