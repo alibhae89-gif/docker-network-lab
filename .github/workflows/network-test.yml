@@ -9,7 +9,7 @@ jobs:
   network-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Generate TLS certs
         run: ./scripts/gen-certs.sh
       - name: Validate Compose file
@@ -28,7 +28,7 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build image
         run: docker build -t docker-network-lab-web:ci ./app
       - name: Trivy scan
