@@ -1,0 +1,40 @@
+name: Network tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  network-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate TLS certs
+        run: ./scripts/gen-certs.sh
+      - name: Validate Compose file
+        run: docker compose config -q
+      - name: Start the lab with 3 replicas
+        run: docker compose up -d --build --scale web=3
+      - name: Run network tests
+        run: ./scripts/network-test.sh
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t docker-network-lab-web:ci ./app
+      - name: Trivy scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: docker-network-lab-web:ci
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"

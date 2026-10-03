@@ -3,23 +3,47 @@ services:
     image: nginx:1.27-alpine
     ports:
       - "8080:80"
+      - "8443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    networks: [frontend]
-    depends_on: [web]
+      - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+      frontend:
+        ipv4_address: 10.77.1.10
+    depends_on:
+      - web
+    restart: unless-stopped
 
   web:
     build: ./app
+    image: docker-network-lab-web:ci
     environment:
       - REDIS_HOST=redis
     networks: [frontend, backend]
-    depends_on: [redis]
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
-    networks: [backend]
+    networks:
+      backend:
+        ipv4_address: 10.77.2.10
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
 
 networks:
   frontend:
+    ipam:
+      config:
+        - subnet: 10.77.1.0/24
   backend:
     internal: true
+    ipam:
+      config:
+        - subnet: 10.77.2.0/24
